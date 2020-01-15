@@ -3,6 +3,7 @@ defmodule Triton.CQL.Insert do
     schema = query[:__schema__].__fields__
 
     insert(query[:insert], query[:__table__], schema) <>
+    using(query[:using]) <>
     if_not_exists(query[:if_not_exists])
   end
 
@@ -16,6 +17,14 @@ defmodule Triton.CQL.Insert do
   defp field_value(field, _) when is_atom(field), do: ":#{field}"
   defp field_value(%DateTime{} = d, _), do: DateTime.to_unix(d, :millisecond)
   defp field_value(field, _), do: field
+
+  defp using(params) do
+    if ttl = params[:ttl] do
+      " USING TTL #{ttl}"
+    else
+      ""
+    end
+  end
 
   defp if_not_exists(flag) when flag == true, do: " IF NOT EXISTS"
   defp if_not_exists(_), do: ""
