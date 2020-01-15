@@ -39,6 +39,10 @@ defmodule Triton.Query do
     QueryBuilder.build_query(:if_exists, module, true)
   end
 
+  defmacro using(module, params) do
+    QueryBuilder.build_query(:using, module, params)
+  end
+
   defmacro update(module, update \\ []) do
     QueryBuilder.build_query(:update, module, update)
   end
