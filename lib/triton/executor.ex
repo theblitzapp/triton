@@ -66,7 +66,8 @@ defmodule Triton.Executor do
             nil -> Xandra.Batch.add(acc, cql)
             prepared ->
               with {:ok, prepared_cql} <- Xandra.prepare(conn, cql, options) do
-                Xandra.Batch.add(acc, prepared_cql, prepared)
+                values = atom_to_string_keys(prepared)
+                Xandra.Batch.add(acc, prepared_cql, values)
               end
           end
         end)
