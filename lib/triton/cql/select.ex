@@ -12,9 +12,31 @@ defmodule Triton.CQL.Select do
   defp select(_, count, table, _) when count === true, do: "SELECT COUNT(*) FROM #{table}"
   defp select(fields, _, table, schema) when is_list(fields) do
     schema_fields = schema |> Enum.map(fn {k, _} -> "#{k}" end)
-    req_fields = fields |> Enum.map(fn k -> "#{k}" end)
-    filtered_fields = MapSet.intersection(MapSet.new(req_fields), MapSet.new(schema_fields)) |> Enum.into([])
-    "SELECT #{Enum.join(filtered_fields, ", ")} FROM #{table}"
+    query_fields =
+      fields
+      |> Enum.reduce(
+        [],
+        fn
+          {fun_name, field}, acc ->
+            if "#{field}" in schema_fields do
+              ["#{fun_name}(#{field})" | acc]
+            else
+              acc
+            end
+
+          k, acc when is_binary(k) -> [k | acc]
+
+          k, acc ->
+            if "#{k}" in schema_fields do
+              ["#{k}" | acc]
+            else
+              acc
+            end
+        end
+      )
+      |> IO.inspect()
+
+    "SELECT #{Enum.join(query_fields, ", ")} FROM #{table}"
   end
   defp select(_, _, table, _), do: "SELECT * FROM #{table}"
 
