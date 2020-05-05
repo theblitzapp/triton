@@ -3,14 +3,23 @@ defmodule Triton.CQL.Update do
     schema = query[:__schema__].__fields__
 
     update(query[:__table__]) <>
-    set(query[:update], schema) <>
+    set(query[:update], query[:prepared], schema) <>
     where(query[:where], schema) <>
     constrain(query[:constrain], schema) <>
     if_exists(query[:if_exists])
   end
 
   defp update(table), do: "UPDATE #{table}"
-  defp set(assignments, schema) when is_list(assignments), do: " SET #{assignments |> Enum.map(fn {k, v} -> "#{k} = #{value(v, schema[k][:type])}" end) |> Enum.join(", ")}"
+  defp set(assignments, nil, schema) when is_list(assignments) do
+    " SET #{assignments |> Enum.map(fn {k, v} -> "#{k} = #{value(v, schema[k][:type])}" end) |> Enum.join(", ")}"
+  end
+  defp set(assignments, prepared, schema) when is_list(assignments) do
+    set =
+      assignments
+      |> Enum.map(fn {k, v} -> "#{k} = #{value(prepared[v], schema[k][:type])}" end)
+      |> Enum.join(", ")
+    " SET #{set}"
+  end
 
   defp where(fragments, schema) when is_list(fragments), do: " WHERE " <> (fragments |> Enum.flat_map(fn fragment -> where_fragment(fragment, schema) end) |> Enum.join(" AND "))
   defp where(_, _), do: ""
