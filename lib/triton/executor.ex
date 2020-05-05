@@ -63,11 +63,12 @@ defmodule Triton.Executor do
         end)
         |> Enum.reduce(Xandra.Batch.new(), fn ({cql, prepared}, acc) ->
           case prepared do
-            nil -> Xandra.Batch.add(acc, cql)
+            nil ->
+              Xandra.Batch.add(acc, cql)
             prepared ->
               with {:ok, prepared_cql} <- Xandra.prepare(conn, cql, options) do
-                values = atom_to_string_keys(prepared)
-                Xandra.Batch.add(acc, prepared_cql, values)
+                prepared = for {key, value} <- prepared, into: %{}, do: {"#{key}", value}
+                Xandra.Batch.add(acc, prepared_cql, prepared)
               end
           end
         end)
