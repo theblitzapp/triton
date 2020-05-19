@@ -3,7 +3,7 @@ defmodule Triton.CQL.Select do
     schema = query[:__schema__].__fields__
 
     select(query[:select], query[:count], query[:__table__], schema) <>
-    where(query[:where], query[:prepared]) <>
+    where(query[:where]) <>
     order_by(query[:order_by] && List.first(query[:order_by])) <>
     limit(query[:limit]) <>
     allow_filtering(query[:allow_filtering])
@@ -39,16 +39,8 @@ defmodule Triton.CQL.Select do
   end
   defp select(_, _, table, _), do: "SELECT * FROM #{table}"
 
-  defp where(fragments, nil) when is_list(fragments), do: " WHERE " <> (fragments |> Enum.flat_map(fn fragment -> where_fragment(fragment) end) |> Enum.join(" AND "))
-  defp where(fragments, prepared) when is_list(fragments) do
-    " WHERE " <> (prepared |> Enum.flat_map(fn fragment -> prepared_where_fragment(fragment) end) |> Enum.join(" AND "))
-  end
-  defp where(_, _), do: ""
-
-  defp prepared_where_fragment({k, v}) when is_list(v), do: v |> Enum.map(fn {c, v} -> prepared_where_fragment({k, c, v}) end)
-  defp prepared_where_fragment({k, _v}), do: ["#{k} = :#{k}"]
-  defp prepared_where_fragment({k, :in, _v}), do: "#{k} IN :#{k}"
-  defp prepared_where_fragment({k, c, _v}), do: "#{k} #{c} #{k}"
+  defp where(fragments) when is_list(fragments), do: " WHERE " <> (fragments |> Enum.flat_map(fn fragment -> where_fragment(fragment) end) |> Enum.join(" AND "))
+  defp where(_), do: ""
 
   defp where_fragment({k, v}) when is_list(v), do: v |> Enum.map(fn {c, v} -> where_fragment({k, c, v}) end)
   defp where_fragment({k, v}), do: ["#{k} = #{value(v)}"]
